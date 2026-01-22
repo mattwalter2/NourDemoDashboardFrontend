@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Calendar, Users, Phone, TrendingUp, Clock, CheckCircle2, AlertCircle, RefreshCw, Loader2, ArrowRight, Activity } from 'lucide-react'
+import { Calendar, Users, Phone, TrendingUp, Clock, CheckCircle2, AlertCircle, RefreshCw, Loader2, ArrowRight, Activity, X } from 'lucide-react'
 import { fetchCalls, getCallStats, getVapi } from '../services/vapiService'
 import { fetchLeadsFromSheets } from '../services/googleSheetsService'
 import { fetchAppointments, formatAppointment } from '../services/googleCalendarService'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+const API_BASE_URL = 'https://nourdemodashboardbackend.onrender.com';
 
 export default function Dashboard({ onNavigate }) {
     const [stats, setStats] = useState({
@@ -18,6 +18,8 @@ export default function Dashboard({ onNavigate }) {
     const [loading, setLoading] = useState(true)
     const [isCalling, setIsCalling] = useState(false)
     const [activeCall, setActiveCall] = useState(null)
+    const [showPhoneModal, setShowPhoneModal] = useState(false)
+    const [targetPhone, setTargetPhone] = useState('')
 
     useEffect(() => {
         loadDashboardData()
@@ -48,7 +50,7 @@ export default function Dashboard({ onNavigate }) {
             const callsData = await fetchCalls(10)
             const callStats = getCallStats(callsData)
 
-            const leadsData = await fetchLeadsFromSheets()
+            // const leadsData = await fetchLeadsFromSheets()
             const aptsData = await fetchAppointments()
 
             const formattedApts = aptsData.slice(0, 3).map(formatAppointment)
@@ -101,19 +103,28 @@ export default function Dashboard({ onNavigate }) {
         return `${days}d ago`
     }
 
-    const handleTestCall = async () => {
-        if (isCalling) {
-            // Can't stop a phone call from here easily without ID, but UI reset
+    const handleTestCallClick = () => {
+        if (isCalling || activeCall) {
             setIsCalling(false);
+            setActiveCall(null);
             return;
         }
+        setShowPhoneModal(true);
+    }
+
+    const executeCall = async (e) => {
+        e.preventDefault();
+        if (!targetPhone) return;
+
+        setShowPhoneModal(false);
+
         try {
             setIsCalling(true);
-            const phoneNumber = '+17032680110'; // User provided number
+            const phoneNumber = targetPhone; // User provided number
 
             console.log("Requesting phone call to:", phoneNumber);
 
-            const response = await fetch('https://nourdemodashboardbackend.onrender.com/api/vapi/initiate-call', {
+            const response = await fetch(`${API_BASE_URL}/api/vapi/initiate-call`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -140,7 +151,7 @@ export default function Dashboard({ onNavigate }) {
         } catch (err) {
             console.error("Failed to start phone call:", err);
             setIsCalling(false);
-            alert(`Failed to start call: ${err.message}. Ensure python server is running.`);
+            alert(`Failed to start call: ${err.message}. Ensure backend is reachable.`);
         }
     }
 
@@ -373,7 +384,7 @@ export default function Dashboard({ onNavigate }) {
 
                         {/* Test Call - Special Style */}
                         <button
-                            onClick={handleTestCall}
+                            onClick={handleTestCallClick}
                             className={`group relative overflow-hidden backdrop-blur-sm rounded-xl p-5 text-left transition-all hover:-translate-y-1 hover:shadow-lg border ${activeCall
                                 ? 'bg-red-500/10 border-red-500/50 hover:bg-red-500/20'
                                 : 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/40'
@@ -402,9 +413,69 @@ export default function Dashboard({ onNavigate }) {
                             <h3 className="text-lg font-bold mb-1">Add Lead</h3>
                             <p className="text-sm text-slate-400 group-hover:text-slate-300">Record new patient</p>
                         </button>
+
                     </div>
                 </div>
             </div>
-        </div>
+
+            {/* Phone Input Modal */}
+            {
+                showPhoneModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <h3 className="text-xl font-bold text-gray-900">Start Test Call</h3>
+                                <button
+                                    onClick={() => setShowPhoneModal(false)}
+                                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={executeCall} className="p-6">
+                                <div className="mb-6">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Phone Number
+                                    </label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                                        <input
+                                            type="tel"
+                                            value={targetPhone}
+                                            onChange={(e) => setTargetPhone(e.target.value)}
+                                            placeholder="+1 (555) 000-0000"
+                                            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-900 placeholder:text-gray-400 font-medium"
+                                            autoFocus
+                                            required
+                                        />
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        Format: E.164 preferred (e.g., +1555000000)
+                                    </p>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPhoneModal(false)}
+                                        className="flex-1 px-4 py-3 text-gray-700 font-medium bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="flex-1 px-4 py-3 text-white font-medium bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Phone size={18} />
+                                        Call Now
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     )
 }
