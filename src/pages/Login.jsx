@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react'
-import { supabase } from '../services/supabaseClient'
+// import { supabase } from '../services/supabaseClient'
 
 export default function Login() {
     const [email, setEmail] = useState('')
@@ -15,10 +15,11 @@ export default function Login() {
         setError('')
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            })
+            // const { data, error } = await supabase.auth.signInWithPassword({
+            //     email,
+            //     password,
+            // })
+            const error = null; // Mock success
 
             if (error) throw error
             // Auth state change will be picked up by App.jsx listener

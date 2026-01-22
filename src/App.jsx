@@ -12,7 +12,7 @@ import Calls from './pages/Calls'
 import AdAnalytics from './pages/AdAnalytics'
 import UniversalInbox from './pages/UniversalInbox'
 import Login from './pages/Login'
-import { supabase } from './services/supabaseClient'
+// import { supabase } from './services/supabaseClient'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -20,18 +20,18 @@ function App() {
 
   useEffect(() => {
     // 1. Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-    })
+    // supabase.auth.getSession().then(({ data: { session } }) => {
+    //   setSession(session)
+    // })
 
     // 2. Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
+    // const {
+    //   data: { subscription },
+    // } = supabase.auth.onAuthStateChange((_event, session) => {
+    //   setSession(session)
+    // })
 
-    return () => subscription.unsubscribe()
+    // return () => subscription.unsubscribe()
   }, [])
 
   const renderPage = () => {
